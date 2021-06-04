@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/fvbock/endless"
@@ -88,6 +89,14 @@ func run() {
 			break
 		case "off":
 			publish(client, "cmd/backlight1", "set/0/0/0")
+			break
+		case "custom":
+			rgb := strings.Split(c.Query("rgb"), ",")
+			if len(rgb) != 3 {
+				c.JSON(http.StatusBadRequest, "not enough parameters")
+				return
+			}
+			publish(client, "cmd/backlight1", fmt.Sprintf("set/%s/%s/%s", rgb[0], rgb[1], rgb[2]))
 			break
 		}
 		c.JSON(http.StatusOK, "done")
