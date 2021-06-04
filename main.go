@@ -65,7 +65,7 @@ func run() {
 		c.Set("client", client)
 	})
 
-	app := engine.Group("/backlight")
+	app := engine.Group("/sandbox")
 	api := app.Group("/api")
 
 	api.POST("set/:color", func(c *gin.Context) {
