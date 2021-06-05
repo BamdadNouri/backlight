@@ -13,6 +13,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type WebHookReq struct {
+	Key    string `json:"key"`
+	Color  string `json:"color"`
+	Action string `json:"action"`
+}
+
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 }
@@ -73,36 +79,28 @@ func run() {
 		color := c.Param("color")
 		cl, _ := c.Get("client")
 		client := cl.(mqtt.Client)
-
-		switch color {
-		case "red":
-			publish(client, "cmd/backlight1", "set/1020/0/0")
-			break
-		case "green":
-			publish(client, "cmd/backlight1", "set/0/1020/0")
-			break
-		case "blue":
-			publish(client, "cmd/backlight1", "set/0/0/1020")
-			break
-		case "purple":
-			publish(client, "cmd/backlight1", "set/1000/0/800")
-			break
-		case "off":
-			publish(client, "cmd/backlight1", "set/0/0/0")
-			break
-		case "custom":
-			rgb := strings.Split(c.Query("rgb"), ",")
+		var rgb []string
+		if color == "costum" {
+			rgb = strings.Split(c.Query("rgb"), ",")
 			if len(rgb) != 3 {
 				c.JSON(http.StatusBadRequest, "not enough parameters")
 				return
 			}
-			publish(client, "cmd/backlight1", fmt.Sprintf("set/%s/%s/%s", rgb[0], rgb[1], rgb[2]))
-			break
 		}
+		handleColor(client, color, rgb)
+
 		c.JSON(http.StatusOK, "done")
 		return
 	})
 	api.POST("/webhook", func(c *gin.Context) {
+		var body WebHookReq
+		err := c.ShouldBindJSON(&body)
+		if err != nil {
+			fmt.Println("webhook body error", err)
+		}
+		cl, _ := c.Get("client")
+		client := cl.(mqtt.Client)
+		handleColor(client, body.Color, []string{})
 		c.JSON(http.StatusOK, "OK")
 		return
 	})
@@ -114,4 +112,27 @@ func run() {
 func publish(client mqtt.Client, topic, message string) {
 	token := client.Publish(topic, 0, false, message)
 	token.Wait()
+}
+
+func handleColor(client mqtt.Client, color string, rgb []string) {
+	switch color {
+	case "red":
+		publish(client, "cmd/backlight1", "set/1020/0/0")
+		break
+	case "green":
+		publish(client, "cmd/backlight1", "set/0/1020/0")
+		break
+	case "blue":
+		publish(client, "cmd/backlight1", "set/0/0/1020")
+		break
+	case "purple":
+		publish(client, "cmd/backlight1", "set/1000/0/800")
+		break
+	case "off":
+		publish(client, "cmd/backlight1", "set/0/0/0")
+		break
+	case "custom":
+		publish(client, "cmd/backlight1", fmt.Sprintf("set/%s/%s/%s", rgb[0], rgb[1], rgb[2]))
+		break
+	}
 }
