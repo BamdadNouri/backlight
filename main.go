@@ -80,7 +80,7 @@ func run() {
 		cl, _ := c.Get("client")
 		client := cl.(mqtt.Client)
 		var rgb []string
-		if color == "costum" {
+		if color == "custom" {
 			rgb = strings.Split(c.Query("rgb"), ",")
 			if len(rgb) != 3 {
 				c.JSON(http.StatusBadRequest, "not enough parameters")
