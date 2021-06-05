@@ -102,6 +102,10 @@ func run() {
 		c.JSON(http.StatusOK, "done")
 		return
 	})
+	api.POST("/webhook", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "OK")
+		return
+	})
 
 	fmt.Println(fmt.Println("LISTENING ON %s", port))
 	endless.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", port), engine)
