@@ -86,6 +86,7 @@ func run() {
 				c.JSON(http.StatusBadRequest, "not enough parameters")
 				return
 			}
+			fmt.Println(rgb)
 		}
 		handleColor(client, color, rgb)
 
