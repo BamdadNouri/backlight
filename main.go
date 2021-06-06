@@ -93,7 +93,7 @@ func run() {
 		c.JSON(http.StatusOK, "done")
 		return
 	})
-	api.POST("/webhook", func(c *gin.Context) {
+	api.POST("webhook", func(c *gin.Context) {
 		fmt.Println("hook activated")
 		var body WebHookReq
 		err := c.ShouldBindJSON(&body)
