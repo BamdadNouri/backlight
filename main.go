@@ -94,6 +94,7 @@ func run() {
 		return
 	})
 	api.POST("/webhook", func(c *gin.Context) {
+		fmt.Println("hook activated")
 		var body WebHookReq
 		err := c.ShouldBindJSON(&body)
 		if err != nil {
@@ -101,8 +102,13 @@ func run() {
 		}
 		cl, _ := c.Get("client")
 		client := cl.(mqtt.Client)
-		handleColor(client, body.Color, []string{})
+		rgb := []string{}
+		if body.Color == "custom" {
+			rgb = strings.Split(body.Action, ",")
+		}
+		handleColor(client, body.Color, rgb)
 		c.JSON(http.StatusOK, "OK")
+		fmt.Println("hook succeeded")
 		return
 	})
 
