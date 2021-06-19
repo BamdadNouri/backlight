@@ -75,24 +75,9 @@ func run() {
 	app := engine.Group("/sandbox")
 	api := app.Group("/api")
 
-	api.POST("set/:color", func(c *gin.Context) {
-		color := c.Param("color")
-		cl, _ := c.Get("client")
-		client := cl.(mqtt.Client)
-		var rgb []string
-		if color == "custom" {
-			rgb = strings.Split(c.Query("rgb"), ",")
-			if len(rgb) != 3 {
-				c.JSON(http.StatusBadRequest, "not enough parameters")
-				return
-			}
-			fmt.Println(rgb)
-		}
-		handleColor(client, color, rgb)
+	api.POST("set/:color", setColorHandler)
+	api.GET("set/:color", setColorHandler)
 
-		c.JSON(http.StatusOK, "done")
-		return
-	})
 	api.POST("webhook", func(c *gin.Context) {
 		fmt.Println("hook activated")
 		var body WebHookReq
@@ -116,30 +101,76 @@ func run() {
 	endless.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", port), engine)
 }
 
-func publish(client mqtt.Client, topic, message string) {
-	token := client.Publish(topic, 0, false, message)
-	token.Wait()
+func setColorHandler(c *gin.Context) {
+	color := c.Param("color")
+	cl, _ := c.Get("client")
+	client := cl.(mqtt.Client)
+	var rgb []string
+	if color == "custom" {
+		rgb = strings.Split(c.Query("rgb"), ",")
+		if len(rgb) != 3 {
+			c.JSON(http.StatusBadRequest, "not enough parameters")
+			return
+		}
+		fmt.Println(rgb)
+	}
+	err := handleColor(client, color, rgb)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, "done")
+	return
 }
 
-func handleColor(client mqtt.Client, color string, rgb []string) {
+func publish(client mqtt.Client, topic, message string) error {
+	token := client.Publish(topic, 0, false, message)
+	token.Wait()
+	if token.Error() != nil {
+		return token.Error()
+	}
+	return nil
+}
+
+func handleColor(client mqtt.Client, color string, rgb []string) error {
 	switch color {
 	case "red":
-		publish(client, "cmd/backlight1", "set/1020/0/0")
+		err := publish(client, "cmd/backlight1", "set/1020/0/0")
+		if err != nil {
+			return err
+		}
 		break
 	case "green":
-		publish(client, "cmd/backlight1", "set/0/1020/0")
+		err := publish(client, "cmd/backlight1", "set/0/1020/0")
+		if err != nil {
+			return err
+		}
 		break
 	case "blue":
-		publish(client, "cmd/backlight1", "set/0/0/1020")
+		err := publish(client, "cmd/backlight1", "set/0/0/1020")
+		if err != nil {
+			return err
+		}
 		break
 	case "purple":
-		publish(client, "cmd/backlight1", "set/1000/0/800")
+		err := publish(client, "cmd/backlight1", "set/1000/0/800")
+		if err != nil {
+			return err
+		}
 		break
 	case "off":
-		publish(client, "cmd/backlight1", "set/0/0/0")
+		err := publish(client, "cmd/backlight1", "set/0/0/0")
+		if err != nil {
+			return err
+		}
 		break
 	case "custom":
-		publish(client, "cmd/backlight1", fmt.Sprintf("set/%s/%s/%s", rgb[0], rgb[1], rgb[2]))
+		err := publish(client, "cmd/backlight1", fmt.Sprintf("set/%s/%s/%s", rgb[0], rgb[1], rgb[2]))
+		if err != nil {
+			return err
+		}
 		break
 	}
+	return nil
 }
