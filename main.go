@@ -13,6 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var mamadGlobalVar string
+
 type WebHookReq struct {
 	Key    string `json:"key"`
 	Color  string `json:"color"`
@@ -36,6 +38,8 @@ func main() {
 }
 
 func run() {
+	mamadGlobalVar = "defaultMamad"
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "9009"
@@ -78,6 +82,9 @@ func run() {
 	api.POST("set/:color", setColorHandler)
 	api.GET("set/:color", setColorHandler)
 
+	api.GET("mamad", getMamadHandler)
+	api.PUT("mamad", updateMamadHandler)
+
 	api.POST("webhook", func(c *gin.Context) {
 		fmt.Println("hook activated")
 		var body WebHookReq
@@ -99,6 +106,28 @@ func run() {
 
 	fmt.Println(fmt.Println("LISTENING ON %s", port))
 	endless.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", port), engine)
+}
+
+func getMamadHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, map[string]string{
+		"mamadValue": mamadGlobalVar,
+	})
+	return
+}
+
+func updateMamadHandler(c *gin.Context) {
+	oldMamadVal := mamadGlobalVar
+	newMamadVal, exists := c.GetQuery("val")
+	if !exists {
+		c.JSON(http.StatusOK, "give me val bro")
+		return
+	}
+	mamadGlobalVar = newMamadVal
+	c.JSON(http.StatusOK, map[string]string{
+		"oldMamadValue": oldMamadVal,
+		"mamadValue":    mamadGlobalVar,
+	})
+	return
 }
 
 func setColorHandler(c *gin.Context) {
